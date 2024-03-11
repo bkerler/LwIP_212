@@ -33,12 +33,14 @@
 #define __CC_H__
 
 #include "cpu.h"
+#include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 typedef int sys_prot_t;
 
-#define LWIP_PROVIDE_ERRNO
+//#define LWIP_PROVIDE_ERRNO
+#define LWIP_ERRNO_INCLUDE <sys/errno.h>
 
 #if defined (__GNUC__) & !defined (__CC_ARM)
 
@@ -79,13 +81,40 @@ typedef int sys_prot_t;
 
 #endif
 
-#define LWIP_PLATFORM_ASSERT(x) do {printf("Assertion \"%s\" failed at line %d in %s\n", \
-                                     x, __LINE__, __FILE__); } while(0)
+#define DEPAREN(X) ESC(ISH X)
+#define ISH(...) ISH __VA_ARGS__
+#define ESC(...) ESC_(__VA_ARGS__)
+#define ESC_(...) VAN ## __VA_ARGS__
+#define VANISH
+
+#define LWIP_PLATFORM_DIAG(x) log_info(Network, DEPAREN(x))
+
+#ifdef _DEBUG
+#define LWIP_PLATFORM_ASSERT(x)                                             \
+    do {                                                                    \
+        extern void lwip_platform_assert(const char*, const char*, int);    \
+        lwip_platform_assert(x, __FILE__, __LINE__);                        \
+    } while (0)
+#else
+#define LWIP_PLATFORM_ASSERT(x)                                             \
+    do {                                                                    \
+        extern void lwip_platform_assert(const char*, const char*, int);    \
+        lwip_platform_assert(x, "<unknown>", 0);                            \
+    } while (0)
+#endif
+
+
+#define LWIP_ERROR(message, expression, handler) \
+    do {                                         \
+        if (!(expression)) {                     \
+            log_error(Network, "%s", message);   \
+            handler;                             \
+        }                                        \
+    } while (0)
 
 /* Define random number generator function */
 #define LWIP_RAND() ((u32_t)rand())
 
-// Move lwip buffers to ccmram
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_NETBUF_base[];
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_TCP_SEG_base[];
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_SYS_TIMEOUT_base[];
@@ -95,7 +124,9 @@ extern uint8_t __attribute__((section(".ccmram"))) memp_memory_FRAG_PBUF_base[];
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_TCPIP_MSG_API_base[];
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_TCP_PCB_base[];
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_PBUF_base[];
+#if 0
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_PBUF_POOL_base[];
+#endif
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_TCPIP_MSG_INPKT_base[];
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_TCP_PCB_LISTEN_base[];
 extern uint8_t __attribute__((section(".ccmram"))) memp_memory_REASSDATA_base[];

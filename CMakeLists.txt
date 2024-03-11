@@ -13,6 +13,7 @@ target_sources(LwIP INTERFACE
   src/core/inet_chksum.c
   src/core/init.c
   src/core/ip.c
+  src/core/ipv4/acd.c
   src/core/ipv4/autoip.c
   src/core/ipv4/dhcp.c
   src/core/ipv4/etharp.c
